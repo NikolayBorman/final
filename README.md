@@ -34,7 +34,7 @@
 
 ## 3. Топология
 
-<img width="940" height="712" alt="image" src="https://github.com/user-attachments/assets/4861d371-3ff8-4ed5-a038-f4e22cd24210" />
+<img width="1035" height="946" alt="image" src="https://github.com/user-attachments/assets/5b10ff09-8917-41dd-906e-181d62f9ef8d" />
 
 ---
 
@@ -1240,40 +1240,376 @@ interface vlan 99
 ### 8.1. На Core-SW
 
 ```
-show ip route
-show ip ospf neighbor
-show ip dhcp binding
-show access-lists
-show vlan brief
-show interfaces trunk
+
+Core-SW#show ip route
+Codes: C - connected, S - static, I - IGRP, R - RIP, M - mobile, B - BGP
+       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area
+       N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type 2
+       E1 - OSPF external type 1, E2 - OSPF external type 2, E - EGP
+       i - IS-IS, L1 - IS-IS level-1, L2 - IS-IS level-2, ia - IS-IS inter area
+       * - candidate default, U - per-user static route, o - ODR
+       P - periodic downloaded static route
+
+Gateway of last resort is 10.0.1.1 to network 0.0.0.0
+
+     10.0.0.0/8 is variably subnetted, 3 subnets, 2 masks
+O       10.0.0.0/30 [110/2] via 10.0.1.1, 00:10:05, GigabitEthernet1/0/1
+C       10.0.1.0/30 is directly connected, GigabitEthernet1/0/1
+L       10.0.1.2/32 is directly connected, GigabitEthernet1/0/1
+     192.168.10.0/24 is variably subnetted, 2 subnets, 2 masks
+C       192.168.10.0/24 is directly connected, Vlan10
+L       192.168.10.1/32 is directly connected, Vlan10
+     192.168.20.0/24 is variably subnetted, 2 subnets, 2 masks
+C       192.168.20.0/28 is directly connected, Vlan20
+L       192.168.20.1/32 is directly connected, Vlan20
+     192.168.21.0/24 is variably subnetted, 2 subnets, 2 masks
+C       192.168.21.0/28 is directly connected, Vlan21
+L       192.168.21.1/32 is directly connected, Vlan21
+     192.168.22.0/24 is variably subnetted, 2 subnets, 2 masks
+C       192.168.22.0/28 is directly connected, Vlan22
+L       192.168.22.1/32 is directly connected, Vlan22
+     192.168.23.0/24 is variably subnetted, 2 subnets, 2 masks
+C       192.168.23.0/28 is directly connected, Vlan23
+L       192.168.23.1/32 is directly connected, Vlan23
+     192.168.30.0/24 is variably subnetted, 2 subnets, 2 masks
+C       192.168.30.0/28 is directly connected, Vlan30
+L       192.168.30.1/32 is directly connected, Vlan30
+     192.168.31.0/24 is variably subnetted, 2 subnets, 2 masks
+C       192.168.31.0/28 is directly connected, Vlan31
+L       192.168.31.1/32 is directly connected, Vlan31
+     192.168.50.0/24 is variably subnetted, 2 subnets, 2 masks
+C       192.168.50.0/24 is directly connected, Vlan50
+L       192.168.50.1/32 is directly connected, Vlan50
+     192.168.60.0/24 is variably subnetted, 2 subnets, 2 masks
+C       192.168.60.0/24 is directly connected, Vlan60
+L       192.168.60.1/32 is directly connected, Vlan60
+     192.168.99.0/24 is variably subnetted, 2 subnets, 2 masks
+C       192.168.99.0/28 is directly connected, Vlan99
+L       192.168.99.1/32 is directly connected, Vlan99
+S*   0.0.0.0/0 [1/0] via 10.0.1.1
+```
+```
+Core-SW#sh ip ospf neighbor 
+
+
+Neighbor ID     Pri   State           Dead Time   Address         Interface
+10.0.1.1          1   FULL/BDR        00:00:33    10.0.1.1        GigabitEthernet1/0/1
+Core-SW
+```
+```
+Core-SW#show ip dhcp binding
+IP address       Client-ID/              Lease expiration        Type
+                 Hardware address
+192.168.10.11    0001.C70A.E261           --                     Automatic
+192.168.20.3     0060.708B.4190           --                     Automatic
+192.168.21.3     0060.5CD7.1197           --                     Automatic
+Core-SW#show ip dhcp binding
+IP address       Client-ID/              Lease expiration        Type
+                 Hardware address
+192.168.10.11    0001.C70A.E261           --                     Automatic
+192.168.10.12    0001.648A.2AD3           --                     Automatic
+192.168.20.3     0060.708B.4190           --                     Automatic
+192.168.21.3     0060.5CD7.1197           --                     Automatic
+192.168.22.3     000B.BEE8.0E6E           --                     Automatic
+192.168.23.3     00D0.BA16.A740           --                     Automatic
+192.168.30.3     00D0.BC10.8C4C           --                     Automatic
+192.168.31.3     0000.0C93.92E0           --                     Automatic
+```
+```Core-SW#show access-lists
+Standard IP access list 20
+    10 deny 192.168.21.0 0.0.0.15
+    20 deny 192.168.22.0 0.0.0.15
+    30 deny 192.168.23.0 0.0.0.15
+    40 deny 192.168.30.0 0.0.0.15
+    50 deny 192.168.31.0 0.0.0.15
+    60 deny 192.168.60.0 0.0.0.255
+    70 permit any
+Standard IP access list 21
+    10 deny 192.168.20.0 0.0.0.15
+    20 deny 192.168.22.0 0.0.0.15
+    30 deny 192.168.23.0 0.0.0.15
+    40 deny 192.168.30.0 0.0.0.15
+    50 deny 192.168.31.0 0.0.0.15
+    60 deny 192.168.60.0 0.0.0.255
+    70 permit any
+Standard IP access list 22
+    10 deny 192.168.20.0 0.0.0.15
+    20 deny 192.168.21.0 0.0.0.15
+    30 deny 192.168.23.0 0.0.0.15
+    40 deny 192.168.30.0 0.0.0.15
+    50 deny 192.168.31.0 0.0.0.15
+    60 deny 192.168.60.0 0.0.0.255
+    70 permit any
+Standard IP access list 23
+    10 deny 192.168.20.0 0.0.0.15
+    20 deny 192.168.21.0 0.0.0.15
+    30 deny 192.168.22.0 0.0.0.15
+    40 deny 192.168.30.0 0.0.0.15
+    50 deny 192.168.31.0 0.0.0.15
+    60 deny 192.168.60.0 0.0.0.255
+    70 permit any
+Standard IP access list 30
+    10 deny 192.168.10.0 0.0.0.255
+    20 deny 192.168.20.0 0.0.0.15
+    30 deny 192.168.21.0 0.0.0.15
+    40 deny 192.168.22.0 0.0.0.15
+    50 deny 192.168.23.0 0.0.0.15
+    60 deny 192.168.31.0 0.0.0.15
+    70 deny 192.168.60.0 0.0.0.255
+    80 permit any
+Standard IP access list 31
+    10 deny 192.168.10.0 0.0.0.255
+    20 deny 192.168.20.0 0.0.0.15
+    30 deny 192.168.21.0 0.0.0.15
+    40 deny 192.168.22.0 0.0.0.15
+    50 deny 192.168.23.0 0.0.0.15
+    60 deny 192.168.30.0 0.0.0.15
+    70 deny 192.168.60.0 0.0.0.255
+    80 permit any
+Standard IP access list 50
+    10 deny 192.168.20.0 0.0.0.15
+    20 deny 192.168.21.0 0.0.0.15
+    30 deny 192.168.22.0 0.0.0.15
+    40 deny 192.168.23.0 0.0.0.15
+    50 deny 192.168.30.0 0.0.0.15
+    60 deny 192.168.31.0 0.0.0.15
+    70 deny 192.168.60.0 0.0.0.255
+    80 deny 192.168.99.0 0.0.0.15
+    90 permit any
+Standard IP access list 10
+    10 deny 192.168.60.0 0.0.0.255
+    20 permit any
+Standard IP access list 99
+    10 deny 192.168.60.0 0.0.0.255
+    20 permit any
+```
+```
+
+Core-SW#show vlan brief
+
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+1    default                          active    Gig1/0/4, Gig1/0/5, Gig1/0/6, Gig1/0/7
+                                                Gig1/0/8, Gig1/0/9, Gig1/0/10, Gig1/0/11
+                                                Gig1/0/12, Gig1/0/13, Gig1/0/14, Gig1/0/15
+                                                Gig1/0/16, Gig1/0/17, Gig1/0/18, Gig1/0/19
+                                                Gig1/0/20, Gig1/0/21, Gig1/0/22, Gig1/0/23
+                                                Gig1/0/24, Gig1/1/2, Gig1/1/3, Gig1/1/4
+10   DOMAIN                           active    
+20   Ceh1                             active    
+21   Ceh2                             active    
+22   Ceh3                             active    
+23   Ceh4                             active    
+30   TP                               active    
+31   ATP                              active    
+50   Video                            active    
+60   Guest                            active    
+99   VLAN0099                         active    
+1002 fddi-default                     active    
+1003 token-ring-default               active    
+1004 fddinet-default                  active   
+```
+```
+Core-SW#show interfaces trunk
+Port        Mode         Encapsulation  Status        Native vlan
+Gig1/0/2    on           802.1q         trunking      1
+Gig1/0/3    on           802.1q         trunking      1
+Gig1/1/1    auto         n-802.1q       trunking      1
+
+Port        Vlans allowed on trunk
+Gig1/0/2    10,60,99
+Gig1/0/3    10,60,99
+Gig1/1/1    1-1005
+
+Port        Vlans allowed and active in management domain
+Gig1/0/2    10,60,99
+Gig1/0/3    10,60,99
+Gig1/1/1    1,10,20,21,22,23,30,31,50,60,99
+
+Port        Vlans in spanning tree forwarding state and not pruned
+Gig1/0/2    10,60,99
+Gig1/0/3    10,60,99
+Gig1/1/1    1,10,20,21,22,23,30,31,50,60,99
 ```
 
 ### 8.2. На коммутаторах
 
 ```
-show vlan brief
-show interfaces trunk
-show spanning-tree
-show etherchannel summary
-show port-security
+SW-Floor1#show vlan brief
+
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+1    default                          active    Gig0/2
+10   DOMAIN                           active    Fa0/1, Fa0/2, Fa0/3, Fa0/4
+                                                Fa0/5, Fa0/6, Fa0/7, Fa0/8
+                                                Fa0/9, Fa0/10, Fa0/11, Fa0/12
+                                                Fa0/13, Fa0/14, Fa0/15, Fa0/16
+                                                Fa0/17, Fa0/18, Fa0/19, Fa0/20
+60   Guest                            active    Fa0/21, Fa0/22, Fa0/23, Fa0/24
+99   MGMT                             active    
+1002 fddi-default                     active    
+1003 token-ring-default               active    
+1004 fddinet-default                  active    
+1005 trnet-default                    active    
+```
+```
+SW-Ceh1#show interfaces trunk
+Port        Mode         Encapsulation  Status        Native vlan
+Gig1/1/1    on           802.1q         trunking      1
+
+Port        Vlans allowed on trunk
+Gig1/1/1    20,50,99
+
+Port        Vlans allowed and active in management domain
+Gig1/1/1    20,50,99
+
+Port        Vlans in spanning tree forwarding state and not pruned
+Gig1/1/1    20,50,99
+```
+```
+SW-Ceh2#show spanning-tree
+VLAN0001
+  Spanning tree enabled protocol rstp
+  Root ID    Priority    24577
+             Address     0004.9AB7.EC05
+             Cost        8
+             Port        25(GigabitEthernet1/1/1)
+             Hello Time  2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    32769  (priority 32768 sys-id-ext 1)
+             Address     0060.5C84.7514
+             Hello Time  2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  20
+
+Interface        Role Sts Cost      Prio.Nbr Type
+---------------- ---- --- --------- -------- --------------------------------
+Gi1/1/1          Root FWD 4         128.25   P2p
+
+VLAN0021
+  Spanning tree enabled protocol rstp
+  Root ID    Priority    24597
+             Address     0004.9AB7.EC05
+             Cost        8
+             Port        25(GigabitEthernet1/1/1)
+             Hello Time  2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    32789  (priority 32768 sys-id-ext 21)
+             Address     0060.5C84.7514
+             Hello Time  2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  20
+
+Interface        Role Sts Cost      Prio.Nbr Type
+---------------- ---- --- --------- -------- --------------------------------
+Gi1/0/1          Desg FWD 19        128.1    P2p
+Gi1/1/1          Root FWD 4         128.25   P2p
+
+VLAN0050
+  Spanning tree enabled protocol rstp
+  Root ID    Priority    24626
+             Address     0004.9AB7.EC05
+             Cost        8
+             Port        25(GigabitEthernet1/1/1)
+             Hello Time  2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    32818  (priority 32768 sys-id-ext 50)
+             Address     0060.5C84.7514
+             Hello Time  2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  20
+
+Interface        Role Sts Cost      Prio.Nbr Type
+---------------- ---- --- --------- -------- --------------------------------
+Gi1/1/1          Root FWD 4         128.25   P2p
+
+VLAN0099
+  Spanning tree enabled protocol rstp
+  Root ID    Priority    32867
+             Address     0060.5C84.7514
+             This bridge is the root
+             Hello Time  2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    32867  (priority 32768 sys-id-ext 99)
+             Address     0060.5C84.7514
+             Hello Time  2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  20
+
+Interface        Role Sts Cost      Prio.Nbr Type
+---------------- ---- --- --------- -------- --------------------------------
+Gi1/1/1          Desg FWD 4         128.25   P2p
+```
+```
+SW-Optical-1#show etherchannel summary
+Flags:  D - down        P - in port-channel
+        I - stand-alone s - suspended
+        H - Hot-standby (LACP only)
+        R - Layer3      S - Layer2
+        U - in use      f - failed to allocate aggregator
+        u - unsuitable for bundling
+        w - waiting to be aggregated
+        d - default port
+
+
+Number of channel-groups in use: 1
+Number of aggregators:           1
+
+Group  Port-channel  Protocol    Ports
+------+-------------+-----------+----------------------------------------------
+
+1      Po1(SU)           LACP   Gig1/0/1(P) Gig1/0/2(P) 
+```
+```
+SW-Floor1#show port-security
+Secure Port MaxSecureAddr CurrentAddr SecurityViolation Security Action
+               (Count)       (Count)        (Count)
+--------------------------------------------------------------------
+        Fa0/1        1          1                 0         Shutdown
+        Fa0/2        1          0                 0         Shutdown
+        Fa0/3        1          0                 0         Shutdown
+        Fa0/4        1          0                 0         Shutdown
+        Fa0/5        1          0                 0         Shutdown
+        Fa0/6        1          0                 0         Shutdown
+        Fa0/7        1          0                 0         Shutdown
+        Fa0/8        1          0                 0         Shutdown
+        Fa0/9        1          0                 0         Shutdown
+       Fa0/10        1          0                 0         Shutdown
+       Fa0/11        1          0                 0         Shutdown
+       Fa0/12        1          0                 0         Shutdown
+       Fa0/13        1          0                 0         Shutdown
+       Fa0/14        1          0                 0         Shutdown
+       Fa0/15        1          0                 0         Shutdown
+       Fa0/16        1          0                 0         Shutdown
+       Fa0/17        1          0                 0         Shutdown
+       Fa0/18        1          0                 0         Shutdown
+       Fa0/19        1          0                 0         Shutdown
+       Fa0/20        1          0                 0         Shutdown
+----------------------------------------------------------------------
 ```
 
 ### 8.3. С конечных устройств
+Проверка работы DHCP
+```cmd
+C:\>ipconfig
 
-| Проверка | Команда | Ожидаемый результат |
-|----------|---------|---------------------|
-| DHCP | `ipconfig` | Адрес из нужной подсети |
-| Связь внутри VLAN | `ping <шлюз>` | Успешно |
-| Изоляция цехов | `ping 192.168.21.1` с PC в VLAN 20 | **Недоступно** |
-| Изоляция проходных | `ping 192.168.10.1` с PC в VLAN 30 | **Недоступно** |
-| Video из домена | `ping 192.168.50.1` с PC в VLAN 10 | Успешно |
-| Video из цеха | `ping 192.168.50.1` с PC в VLAN 20 | **Недоступно** |
-| Guest к внутренним | `ping 192.168.10.1` с PC в VLAN 60 | **Недоступно** |
-| Guest к Интернету | `ping 8.8.8.8` с PC в VLAN 60 | Успешно |
-| Интернет из домена | `ping 8.8.8.8` с PC в VLAN 10 | Успешно |
-| SSH | `ssh -l admin 192.168.99.1` | Успешный вход |
+FastEthernet0 Connection:(default port)
 
----
+   Connection-specific DNS Suffix..: 
+   Link-local IPv6 Address.........: FE80::201:C7FF:FE0A:E261
+   IPv6 Address....................: ::
+   IPv4 Address....................: 192.168.10.11
+   Subnet Mask.....................: 255.255.255.0
+   Default Gateway.................: ::
+                                     192.168.10.1
+```
+Связь внутри Vlan
+```cmd
+C:\>ping 192.168.20.1
+
+Pinging 192.168.20.1 with 32 bytes of data:
+
+Reply from 192.168.20.1: bytes=32 time<1ms TTL=255
+Reply from 192.168.20.1: bytes=32 time<1ms TTL=255
+Reply from 192.168.20.1: bytes=32 time<1ms TTL=255
+Reply from 192.168.20.1: bytes=32 time<1ms TTL=255
+```
 
 ## 9. Примечания и ограничения
 
@@ -1286,10 +1622,6 @@ show port-security
 4. **Оптические порты:** В CPT только **3650-24PS** имеет SFP-порты (4 шт.). Для 7 оптических линков использованы два коммутатора: **SW-Optical-1** и **SW-Optical-2**, соединённые EtherChannel.
 
 5. **Standard ACL:** Использованы стандартные ACL (1–99). Они фильтруют только по источнику и размещаются близко к назначению. Для более точного контроля в реальной сети применяются расширенные ACL.
-
-6. **FHRP:** Не используется, так как в проекте одно ядро. При добавлении второго ядра можно настроить HSRP/VRRP.
-
-7. **IPv6 и WLAN:** Не включены в базовый проект. Могут быть добавлены как расширение (SLAAC, DHCPv6, WLC + точки доступа).
 
 ---
 
