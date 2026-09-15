@@ -5,7 +5,7 @@
 **Цель:** Спроектировать и настроить масштабируемую, отказоустойчивую и защищённую ЛВС деревообрабатывающего предприятия.
 
 **Задачи:**
-1. Спроектировать двухуровневую модель сети.
+1. Спроектировать двухуровневую модель сети (collapsed core).
 2. Разработать план VLAN и VLSM-адресации.
 3. Настроить коммутацию: VLAN, trunk, STP, EtherChannel, Port Security.
 4. Реализовать маршрутизацию между VLAN на L3-коммутаторе.
@@ -28,13 +28,13 @@
 | **Cisco 3650-24PS** | Коммутаторы доступа цехов и проходных (SFP + PoE) | 6 |
 | **GLC-LH-SMD** | Оптический SFP-трансивер 1 Гбит/с, 10 км | 14 |
 
-
+> **Примечание:** В Cisco Packet Tracer 9.0 коммутаторы 2960 не поддерживают PoE и SFP. Поэтому коммутаторы в здании управления реализованы на 2960-24TT. Коммутаторы цехов и проходных — на 3650-24PS.
 
 ---
 
 ## 3. Топология
 
-<img width="1035" height="946" alt="image" src="https://github.com/user-attachments/assets/5b10ff09-8917-41dd-906e-181d62f9ef8d" />
+<img width="1058" height="833" alt="image" src="https://github.com/user-attachments/assets/cf33ca0d-7bae-484c-9835-c3ed4000a594" />
 
 ---
 
@@ -53,6 +53,9 @@
 | 60 | Guest | Гостевой Wi-Fi (только Интернет) | 192.168.60.0/24 | 192.168.60.1 |
 | 99 | MGMT | Управление оборудованием | 192.168.99.0/28 | 192.168.99.1 |
 
+**WAN-линки:**
+- ISP ↔ Edge: `10.0.0.0/30` (ISP: .1, Edge: .2)
+- Edge ↔ Core-SW: `10.0.1.0/30` (Edge: .1, Core: .2)
 
 **IP управления коммутаторов (VLAN 99):**
 
@@ -123,7 +126,7 @@ line vty 0 15
  transport input ssh
  exec-timeout 5 0
 !
-ip domain-name example.com
+ip domain-name dok.local
 crypto key generate rsa modulus 1024
 !
 banner motd ^C Authorized Access Only! ^C
@@ -181,8 +184,8 @@ line vty 0 15
  transport input ssh
  exec-timeout 5 0
 !
-ip domain-name example.com
-crypto key generate rsa modulus 1024
+ip domain-name dok.local
+crypto key generate rsa general-keys modulus 1024
 !
 banner motd ^C Authorized Access Only! ^C
 !
@@ -334,8 +337,6 @@ ip dhcp pool GUEST
 ntp master 3
 !
 snmp-server community public RO
-snmp-server location Server Room
-snmp-server contact admin@example.com
 !
 lldp run
 !
@@ -343,7 +344,7 @@ end
 write memory
 ```
 
-**Пояснение:** Core-SW — ядро сети. Выполняет маршрутизацию между VLAN, DHCP, NTP (мастер), SNMP. OSPF анонсирует все внутренние подсети. STP настроен так, что Core-SW является корневым мостом. Транк к SW-Optical-1 пропускает в том числе VLAN 60 (Guest).
+**Пояснение:** Core-SW — ядро сети. Выполняет маршрутизацию между VLAN, DHCP, NTP (мастер), SNMP . OSPF анонсирует все внутренние подсети. Core-SW является корневым мостом.
 
 ### 5.4. SW-Optical-1 (Cisco 3650)
 
@@ -366,8 +367,7 @@ line vty 0 15
  login local
  transport input ssh
 !
-ip domain-name example.com
-crypto key generate rsa modulus 1024
+ip domain-name dok.local
 !
 vlan 20
  name Ceh1
@@ -401,17 +401,17 @@ interface GigabitEthernet1/1/1
 interface GigabitEthernet1/1/2
  description To SW-Ceh1 (fiber)
  switchport mode trunk
- switchport trunk allowed vlan 20,50
+ switchport trunk allowed vlan 20,50,99
 !
 interface GigabitEthernet1/1/3
  description To SW-Ceh2 (fiber)
  switchport mode trunk
- switchport trunk allowed vlan 21,50
+ switchport trunk allowed vlan 21,50,99
 !
 interface GigabitEthernet1/1/4
  description To SW-Ceh3 (fiber)
  switchport mode trunk
- switchport trunk allowed vlan 22,50
+ switchport trunk allowed vlan 22,50,99
 !
 interface range GigabitEthernet1/0/1-2
  channel-group 1 mode active
@@ -428,7 +428,7 @@ end
 write memory
 ```
 
-**Пояснение:** SW-Optical-1 агрегирует оптические линки от цехов 1–3. EtherChannel (LACP) к SW-Optical-2 увеличивает пропускную способность и обеспечивает резервирование.
+**Пояснение:** SW-Optical-1 агрегирует оптические линки от цехов 1,2,3. EtherChannel (LACP) к SW-Optical-2 увеличивает пропускную способность и обеспечивает резервирование.
 
 ### 5.5. SW-Optical-2 (Cisco 3650)
 
@@ -451,8 +451,7 @@ line vty 0 15
  login local
  transport input ssh
 !
-ip domain-name example.com
-crypto key generate rsa modulus 1024
+ip domain-name dok.local
 !
 vlan 20
  name Ceh1
@@ -481,17 +480,17 @@ ip default-gateway 192.168.99.1
 interface GigabitEthernet1/1/1
  description To SW-Ceh4 (fiber)
  switchport mode trunk
- switchport trunk allowed vlan 23,50
+ switchport trunk allowed vlan 23,50,99
 !
 interface GigabitEthernet1/1/2
  description To SW-TP (fiber)
  switchport mode trunk
- switchport trunk allowed vlan 30,50
+ switchport trunk allowed vlan 30,50,99
 !
 interface GigabitEthernet1/1/3
  description To SW-ATP (fiber)
  switchport mode trunk
- switchport trunk allowed vlan 31,50
+ switchport trunk allowed vlan 31,50,99
 !
 interface range GigabitEthernet1/0/1-2
  channel-group 1 mode active
@@ -508,7 +507,7 @@ end
 write memory
 ```
 
-**Пояснение:** SW-Optical-2 агрегирует линки от цеха 4 и проходных. Соединён с SW-Optical-1 через EtherChannel.
+**Пояснение:** SW-Optical-2 агрегирует линки от цеха 4,табельной и автотранспортой проходных. Соединён с SW-Optical-1 через EtherChannel по объединенным портам GigabitEthernet1/0/1-2.
 
 ### 5.6. SW-Floor1 (Cisco 2960, VLAN 10 + Guest)
 
@@ -531,8 +530,7 @@ line vty 0 15
  login local
  transport input ssh
 !
-ip domain-name example.com
-crypto key generate rsa modulus 1024
+ip domain-name dok.local
 !
 vlan 10
  name DOMAIN
@@ -576,8 +574,6 @@ end
 write memory
 ```
 
-**Пояснение:** SW-Floor1 — коммутатор доступа 1-го этажа на Cisco 2960. Порты Fa0/1–20 — VLAN 10 (домен), Fa0/21–24 — VLAN 60 (Guest) для подключения гостевых точек доступа. Port Security ограничивает подключение одним MAC-адресом на порт. CDP отключён на портах доступа. Uplink — Gi0/1.
-
 ### 5.7. SW-Floor2 (Cisco 2960, VLAN 10 + Guest)
 
 ```
@@ -599,8 +595,7 @@ line vty 0 15
  login local
  transport input ssh
 !
-ip domain-name example.com
-crypto key generate rsa modulus 1024
+ip domain-name dok.local
 !
 vlan 10
  name DOMAIN
@@ -665,8 +660,7 @@ line vty 0 15
  login local
  transport input ssh
 !
-ip domain-name example.com
-crypto key generate rsa modulus 1024
+ip domain-name dok.local
 !
 vlan 20
  name Ceh1
@@ -712,8 +706,6 @@ end
 write memory
 ```
 
-**Пояснение:** SW-Ceh1 — коммутатор цеха №1. Порты 1–10 — промышленные ПК (VLAN 20), порты 11–20 — камеры (VLAN 50, PoE). Транк к SW-Optical-1 по оптике.
-
 ### 5.9. SW-Ceh2 (Cisco 3650, VLAN 21)
 
 ```
@@ -735,8 +727,7 @@ line vty 0 15
  login local
  transport input ssh
 !
-ip domain-name example.com
-crypto key generate rsa modulus 1024
+ip domain-name dok.local
 !
 vlan 21
  name Ceh2
@@ -803,8 +794,7 @@ line vty 0 15
  login local
  transport input ssh
 !
-ip domain-name example.com
-crypto key generate rsa modulus 1024
+ip domain-name dok.local
 !
 vlan 22
  name Ceh3
@@ -871,8 +861,7 @@ line vty 0 15
  login local
  transport input ssh
 !
-ip domain-name example.com
-crypto key generate rsa modulus 1024
+ip domain-name dok.local
 !
 vlan 23
  name Ceh4
@@ -939,8 +928,7 @@ line vty 0 15
  login local
  transport input ssh
 !
-ip domain-name example.com
-crypto key generate rsa modulus 1024
+ip domain-name dok.local
 !
 vlan 30
  name TP
@@ -1007,8 +995,7 @@ line vty 0 15
  login local
  transport input ssh
 !
-ip domain-name example.com
-crypto key generate rsa modulus 1024
+ip domain-name dok.local
 !
 vlan 31
  name ATP
@@ -1056,80 +1043,110 @@ write memory
 
 ### 5.14. Настройка конечных устройств (DHCP-клиенты)
 
-В Cisco Packet Tracer по умолчанию сетевые адаптеры ПК находятся в режиме **Static**. Чтобы они получали адреса автоматически, необходимо на каждом ПК выставляем DHCP в настройках сетевой карты.
+В Cisco Packet Tracer по умолчанию сетевые адаптеры ПК находятся в режиме **Static**. Чтобы конечные устройства получали ip от нашего DHCP-сервера, Ставим в настройках **DHCP**.
+После этого проверяем получение адреса на ПК
+```cmd
+C:\>ipconfig
 
+FastEthernet0 Connection:(default port)
+
+   Connection-specific DNS Suffix..: 
+   Link-local IPv6 Address.........: FE80::20C:85FF:FE67:26DE
+   IPv6 Address....................: ::
+   IPv4 Address....................: 192.168.20.3
+   Subnet Mask.....................: 255.255.255.240
+   Default Gateway.................: ::
+                                     192.168.20.1
+
+Bluetooth Connection:
+
+   Connection-specific DNS Suffix..: 
+   Link-local IPv6 Address.........: ::
+   IPv6 Address....................: ::
+   IPv4 Address....................: 0.0.0.0
+   Subnet Mask.....................: 0.0.0.0
+   Default Gateway.................: ::
+                                     0.0.0.0
 ---
 
 ## 6. Изоляция VLAN (стандартные ACL)
 
 Все ACL применяются **outbound** на SVI соответствующих VLAN на Core-SW.
 
-### 6.1. Изоляция цехов
-
-**ACL 20 (VLAN 20 — Ceh1):**
+### 6.1. ACL 10 — DOMAIN (VLAN 10)
 
 ```
+access-list 10 deny 192.168.20.0 0.0.0.15
+access-list 10 deny 192.168.21.0 0.0.0.15
+access-list 10 deny 192.168.22.0 0.0.0.15
+access-list 10 deny 192.168.23.0 0.0.0.15
+access-list 10 deny 192.168.30.0 0.0.0.15
+access-list 10 deny 192.168.31.0 0.0.0.15
+access-list 10 deny 192.168.60.0 0.0.0.255
+access-list 10 permit any
+```
+
+### 6.2. ACL 20 — Ceh1 (VLAN 20)
+
+```
+access-list 20 deny 192.168.10.0 0.0.0.255
 access-list 20 deny 192.168.21.0 0.0.0.15
 access-list 20 deny 192.168.22.0 0.0.0.15
 access-list 20 deny 192.168.23.0 0.0.0.15
 access-list 20 deny 192.168.30.0 0.0.0.15
 access-list 20 deny 192.168.31.0 0.0.0.15
+access-list 20 deny 192.168.50.0 0.0.0.255
 access-list 20 deny 192.168.60.0 0.0.0.255
+access-list 20 deny 192.168.99.0 0.0.0.15
 access-list 20 permit any
 ```
 
-**ACL 21 (VLAN 21 — Ceh2):**
+### 6.3. ACL 21 — Ceh2 (VLAN 21)
 
 ```
+access-list 21 deny 192.168.10.0 0.0.0.255
 access-list 21 deny 192.168.20.0 0.0.0.15
 access-list 21 deny 192.168.22.0 0.0.0.15
 access-list 21 deny 192.168.23.0 0.0.0.15
 access-list 21 deny 192.168.30.0 0.0.0.15
 access-list 21 deny 192.168.31.0 0.0.0.15
+access-list 21 deny 192.168.50.0 0.0.0.255
 access-list 21 deny 192.168.60.0 0.0.0.255
+access-list 21 deny 192.168.99.0 0.0.0.15
 access-list 21 permit any
 ```
 
-**ACL 22 (VLAN 22 — Ceh3):**
+### 6.4. ACL 22 — Ceh3 (VLAN 22)
 
 ```
+access-list 22 deny 192.168.10.0 0.0.0.255
 access-list 22 deny 192.168.20.0 0.0.0.15
 access-list 22 deny 192.168.21.0 0.0.0.15
 access-list 22 deny 192.168.23.0 0.0.0.15
 access-list 22 deny 192.168.30.0 0.0.0.15
 access-list 22 deny 192.168.31.0 0.0.0.15
+access-list 22 deny 192.168.50.0 0.0.0.255
 access-list 22 deny 192.168.60.0 0.0.0.255
+access-list 22 deny 192.168.99.0 0.0.0.15
 access-list 22 permit any
 ```
 
-**ACL 23 (VLAN 23 — Ceh4):**
+### 6.5. ACL 23 — Ceh4 (VLAN 23)
 
 ```
+access-list 23 deny 192.168.10.0 0.0.0.255
 access-list 23 deny 192.168.20.0 0.0.0.15
 access-list 23 deny 192.168.21.0 0.0.0.15
 access-list 23 deny 192.168.22.0 0.0.0.15
 access-list 23 deny 192.168.30.0 0.0.0.15
 access-list 23 deny 192.168.31.0 0.0.0.15
+access-list 23 deny 192.168.50.0 0.0.0.255
 access-list 23 deny 192.168.60.0 0.0.0.255
+access-list 23 deny 192.168.99.0 0.0.0.15
 access-list 23 permit any
 ```
 
-**Применение:**
-
-```
-interface vlan 20
- ip access-group 20 out
-interface vlan 21
- ip access-group 21 out
-interface vlan 22
- ip access-group 22 out
-interface vlan 23
- ip access-group 23 out
-```
-
-### 6.2. Изоляция проходных
-
-**ACL 30 (VLAN 30 — TP):**
+### 6.6. ACL 30 — TP (VLAN 30)
 
 ```
 access-list 30 deny 192.168.10.0 0.0.0.255
@@ -1138,11 +1155,13 @@ access-list 30 deny 192.168.21.0 0.0.0.15
 access-list 30 deny 192.168.22.0 0.0.0.15
 access-list 30 deny 192.168.23.0 0.0.0.15
 access-list 30 deny 192.168.31.0 0.0.0.15
+access-list 30 deny 192.168.50.0 0.0.0.255
 access-list 30 deny 192.168.60.0 0.0.0.255
+access-list 30 deny 192.168.99.0 0.0.0.15
 access-list 30 permit any
 ```
 
-**ACL 31 (VLAN 31 — ATP):**
+### 6.7. ACL 31 — ATP (VLAN 31)
 
 ```
 access-list 31 deny 192.168.10.0 0.0.0.255
@@ -1151,22 +1170,13 @@ access-list 31 deny 192.168.21.0 0.0.0.15
 access-list 31 deny 192.168.22.0 0.0.0.15
 access-list 31 deny 192.168.23.0 0.0.0.15
 access-list 31 deny 192.168.30.0 0.0.0.15
+access-list 31 deny 192.168.50.0 0.0.0.255
 access-list 31 deny 192.168.60.0 0.0.0.255
+access-list 31 deny 192.168.99.0 0.0.0.15
 access-list 31 permit any
 ```
 
-**Применение:**
-
-```
-interface vlan 30
- ip access-group 30 out
-interface vlan 31
- ip access-group 31 out
-```
-
-### 6.3. Доступ к видеонаблюдению (только из VLAN 10)
-
-**ACL 50 (VLAN 50 — Video):**
+### 6.8. ACL 50 — Video (VLAN 50)
 
 ```
 access-list 50 deny 192.168.20.0 0.0.0.15
@@ -1180,39 +1190,78 @@ access-list 50 deny 192.168.99.0 0.0.0.15
 access-list 50 permit any
 ```
 
-**Применение:**
+### 6.9. ACL 60 — Guest (VLAN 60)
 
 ```
-interface vlan 50
- ip access-group 50 out
+access-list 60 deny 192.168.10.0 0.0.0.255
+access-list 60 deny 192.168.20.0 0.0.0.15
+access-list 60 deny 192.168.21.0 0.0.0.15
+access-list 60 deny 192.168.22.0 0.0.0.15
+access-list 60 deny 192.168.23.0 0.0.0.15
+access-list 60 deny 192.168.30.0 0.0.0.15
+access-list 60 deny 192.168.31.0 0.0.0.15
+access-list 60 deny 192.168.50.0 0.0.0.255
+access-list 60 deny 192.168.99.0 0.0.0.15
+access-list 60 permit any
 ```
 
-### 6.4. Изоляция гостевого VLAN (Guest)
-
-**ACL 10 (VLAN 10 — DOMAIN):**
+### 6.10. ACL 99 — MGMT (VLAN 99)
 
 ```
-access-list 10 deny 192.168.60.0 0.0.0.255
-access-list 10 permit any
-```
-
-**ACL 99 (VLAN 99 — MGMT):**
-
-```
+access-list 99 deny 192.168.20.0 0.0.0.15
+access-list 99 deny 192.168.21.0 0.0.0.15
+access-list 99 deny 192.168.22.0 0.0.0.15
+access-list 99 deny 192.168.23.0 0.0.0.15
+access-list 99 deny 192.168.30.0 0.0.0.15
+access-list 99 deny 192.168.31.0 0.0.0.15
 access-list 99 deny 192.168.60.0 0.0.0.255
 access-list 99 permit any
 ```
 
-**Применение:**
+### 6.11. Применение ACL ко всем SVI
 
 ```
 interface vlan 10
  ip access-group 10 out
+interface vlan 20
+ ip access-group 20 out
+interface vlan 21
+ ip access-group 21 out
+interface vlan 22
+ ip access-group 22 out
+interface vlan 23
+ ip access-group 23 out
+interface vlan 30
+ ip access-group 30 out
+interface vlan 31
+ ip access-group 31 out
+interface vlan 50
+ ip access-group 50 out
+interface vlan 60
+ ip access-group 60 out
 interface vlan 99
  ip access-group 99 out
+exit
+write memory
 ```
 
-**Пояснение:** Все ACL применяются outbound на SVI. Трафик Guest, направленный в любую внутреннюю подсеть, блокируется на выходе в соответствующий VLAN. Трафик Guest в Интернет идёт через gi0/1 к Edge-Router, минуя внутренние SVI, поэтому NAT и выход в глобальную сеть работают без ограничений.
+### 6.12. Если ACL создан неправильно
+
+```
+configure terminal
+no access-list 10
+no access-list 20
+no access-list 21
+no access-list 22
+no access-list 23
+no access-list 30
+no access-list 31
+no access-list 50
+no access-list 60
+no access-list 99
+```
+
+Затем создать ACL заново (разделы 6.1–6.10) и применить к SVI (раздел 6.11).
 
 ---
 
@@ -1231,16 +1280,15 @@ interface vlan 99
 | 9 | SW-Optical-2 | Gi1/1/3 | SW-ATP | Gi1/1/1 | Оптика | 31, 50, 99 |
 | 10 | SW-Optical-1 | Gi1/0/1-2 (Po1) | SW-Optical-2 | Gi1/0/1-2 (Po1) | Медь (EtherChannel) | 20,21,22,23,30,31,50,60,99 |
 
-> **Примечание:** Для EtherChannel между SW-Optical-1 и SW-Optical-2 используется LACP (mode active), логический интерфейс Port-channel 1. VLAN-политика задана как на физических портах, так и на port-channel.
-
 ---
 
 ## 8. Проверка работоспособности
 
 ### 8.1. На Core-SW
 
+**Маршрутизация (show ip route):**
 ```
-
+Core-SW#show ip route
 Core-SW#show ip route
 Codes: C - connected, S - static, I - IGRP, R - RIP, M - mobile, B - BGP
        D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area
@@ -1253,7 +1301,7 @@ Codes: C - connected, S - static, I - IGRP, R - RIP, M - mobile, B - BGP
 Gateway of last resort is 10.0.1.1 to network 0.0.0.0
 
      10.0.0.0/8 is variably subnetted, 3 subnets, 2 masks
-O       10.0.0.0/30 [110/2] via 10.0.1.1, 00:10:05, GigabitEthernet1/0/1
+O       10.0.0.0/30 [110/2] via 10.0.1.1, 00:11:10, GigabitEthernet1/0/1
 C       10.0.1.0/30 is directly connected, GigabitEthernet1/0/1
 L       10.0.1.2/32 is directly connected, GigabitEthernet1/0/1
      192.168.10.0/24 is variably subnetted, 2 subnets, 2 masks
@@ -1288,84 +1336,30 @@ C       192.168.99.0/28 is directly connected, Vlan99
 L       192.168.99.1/32 is directly connected, Vlan99
 S*   0.0.0.0/0 [1/0] via 10.0.1.1
 ```
-```
-Core-SW#sh ip ospf neighbor 
 
-
-Neighbor ID     Pri   State           Dead Time   Address         Interface
-10.0.1.1          1   FULL/BDR        00:00:33    10.0.1.1        GigabitEthernet1/0/1
-Core-SW
+**ACL (show access-lists):**
 ```
-```
-Core-SW#show ip dhcp binding
-IP address       Client-ID/              Lease expiration        Type
-                 Hardware address
-192.168.10.11    0001.C70A.E261           --                     Automatic
-192.168.20.3     0060.708B.4190           --                     Automatic
-192.168.21.3     0060.5CD7.1197           --                     Automatic
-Core-SW#show ip dhcp binding
-IP address       Client-ID/              Lease expiration        Type
-                 Hardware address
-192.168.10.11    0001.C70A.E261           --                     Automatic
-192.168.10.12    0001.648A.2AD3           --                     Automatic
-192.168.20.3     0060.708B.4190           --                     Automatic
-192.168.21.3     0060.5CD7.1197           --                     Automatic
-192.168.22.3     000B.BEE8.0E6E           --                     Automatic
-192.168.23.3     00D0.BA16.A740           --                     Automatic
-192.168.30.3     00D0.BC10.8C4C           --                     Automatic
-192.168.31.3     0000.0C93.92E0           --                     Automatic
-```
-```Core-SW#show access-lists
-Standard IP access list 20
-    10 deny 192.168.21.0 0.0.0.15
-    20 deny 192.168.22.0 0.0.0.15
-    30 deny 192.168.23.0 0.0.0.15
-    40 deny 192.168.30.0 0.0.0.15
-    50 deny 192.168.31.0 0.0.0.15
-    60 deny 192.168.60.0 0.0.0.255
-    70 permit any
-Standard IP access list 21
-    10 deny 192.168.20.0 0.0.0.15
-    20 deny 192.168.22.0 0.0.0.15
-    30 deny 192.168.23.0 0.0.0.15
-    40 deny 192.168.30.0 0.0.0.15
-    50 deny 192.168.31.0 0.0.0.15
-    60 deny 192.168.60.0 0.0.0.255
-    70 permit any
-Standard IP access list 22
-    10 deny 192.168.20.0 0.0.0.15
-    20 deny 192.168.21.0 0.0.0.15
-    30 deny 192.168.23.0 0.0.0.15
-    40 deny 192.168.30.0 0.0.0.15
-    50 deny 192.168.31.0 0.0.0.15
-    60 deny 192.168.60.0 0.0.0.255
-    70 permit any
-Standard IP access list 23
+Core-SW#show access-lists
+Standard IP access list 10
     10 deny 192.168.20.0 0.0.0.15
     20 deny 192.168.21.0 0.0.0.15
     30 deny 192.168.22.0 0.0.0.15
-    40 deny 192.168.30.0 0.0.0.15
-    50 deny 192.168.31.0 0.0.0.15
-    60 deny 192.168.60.0 0.0.0.255
-    70 permit any
-Standard IP access list 30
-    10 deny 192.168.10.0 0.0.0.255
-    20 deny 192.168.20.0 0.0.0.15
-    30 deny 192.168.21.0 0.0.0.15
-    40 deny 192.168.22.0 0.0.0.15
-    50 deny 192.168.23.0 0.0.0.15
+    40 deny 192.168.23.0 0.0.0.15
+    50 deny 192.168.30.0 0.0.0.15
     60 deny 192.168.31.0 0.0.0.15
     70 deny 192.168.60.0 0.0.0.255
     80 permit any
-Standard IP access list 31
+Standard IP access list 20
     10 deny 192.168.10.0 0.0.0.255
-    20 deny 192.168.20.0 0.0.0.15
-    30 deny 192.168.21.0 0.0.0.15
-    40 deny 192.168.22.0 0.0.0.15
-    50 deny 192.168.23.0 0.0.0.15
-    60 deny 192.168.30.0 0.0.0.15
-    70 deny 192.168.60.0 0.0.0.255
-    80 permit any
+    20 deny 192.168.21.0 0.0.0.15
+    30 deny 192.168.22.0 0.0.0.15
+    40 deny 192.168.23.0 0.0.0.15
+    50 deny 192.168.30.0 0.0.0.15
+    60 deny 192.168.31.0 0.0.0.15
+    70 deny 192.168.50.0 0.0.0.255
+    80 deny 192.168.60.0 0.0.0.255
+    90 deny 192.168.99.0 0.0.0.15
+   100 permit any
 Standard IP access list 50
     10 deny 192.168.20.0 0.0.0.15
     20 deny 192.168.21.0 0.0.0.15
@@ -1376,16 +1370,22 @@ Standard IP access list 50
     70 deny 192.168.60.0 0.0.0.255
     80 deny 192.168.99.0 0.0.0.15
     90 permit any
-Standard IP access list 10
-    10 deny 192.168.60.0 0.0.0.255
-    20 permit any
-Standard IP access list 99
-    10 deny 192.168.60.0 0.0.0.255
-    20 permit any
-```
+Standard IP access list 60
+    10 deny 192.168.10.0 0.0.0.255
+    20 deny 192.168.20.0 0.0.0.15
+    30 deny 192.168.21.0 0.0.0.15
+    40 deny 192.168.22.0 0.0.0.15
+    50 deny 192.168.23.0 0.0.0.15
+    60 deny 192.168.30.0 0.0.0.15
+    70 deny 192.168.31.0 0.0.0.15
+    80 deny 192.168.50.0 0.0.0.255
+    90 deny 192.168.99.0 0.0.0.15
+   100 permit any
 ```
 
-Core-SW#show vlan brief
+**VLAN (show vlan brief):**
+```
+Core-SW#show vlan brief 
 
 VLAN Name                             Status    Ports
 ---- -------------------------------- --------- -------------------------------
@@ -1404,38 +1404,43 @@ VLAN Name                             Status    Ports
 31   ATP                              active    
 50   Video                            active    
 60   Guest                            active    
-99   VLAN0099                         active    
+99   MGMT                             active    
 1002 fddi-default                     active    
 1003 token-ring-default               active    
-1004 fddinet-default                  active   
+1004 fddinet-default                  active    
+1005 trnet-default                    active    
 ```
+
+**Транки (show interfaces trunk):**
 ```
 Core-SW#show interfaces trunk
+Core-SW#show interfaces trunk 
 Port        Mode         Encapsulation  Status        Native vlan
 Gig1/0/2    on           802.1q         trunking      1
 Gig1/0/3    on           802.1q         trunking      1
-Gig1/1/1    auto         n-802.1q       trunking      1
+Gig1/1/1    on           802.1q         trunking      1
 
 Port        Vlans allowed on trunk
 Gig1/0/2    10,60,99
 Gig1/0/3    10,60,99
-Gig1/1/1    1-1005
+Gig1/1/1    20-23,30-31,50,60,99
 
 Port        Vlans allowed and active in management domain
 Gig1/0/2    10,60,99
 Gig1/0/3    10,60,99
-Gig1/1/1    1,10,20,21,22,23,30,31,50,60,99
+Gig1/1/1    20,21,22,23,30,31,50,60,99
 
 Port        Vlans in spanning tree forwarding state and not pruned
 Gig1/0/2    10,60,99
 Gig1/0/3    10,60,99
-Gig1/1/1    1,10,20,21,22,23,30,31,50,60,99
+Gig1/1/1    20,21,22,23,30,31,50,60,99
 ```
 
 ### 8.2. На коммутаторах
 
+**VLAN на SW-Floor1:**
 ```
-SW-Floor1#show vlan brief
+SW-Floor1#show vlan brief 
 
 VLAN Name                             Status    Ports
 ---- -------------------------------- --------- -------------------------------
@@ -1450,34 +1455,22 @@ VLAN Name                             Status    Ports
 1002 fddi-default                     active    
 1003 token-ring-default               active    
 1004 fddinet-default                  active    
-1005 trnet-default                    active    
+1005 trnet-default                    active   
 ```
-```
-SW-Ceh1#show interfaces trunk
-Port        Mode         Encapsulation  Status        Native vlan
-Gig1/1/1    on           802.1q         trunking      1
 
-Port        Vlans allowed on trunk
-Gig1/1/1    20,50,99
-
-Port        Vlans allowed and active in management domain
-Gig1/1/1    20,50,99
-
-Port        Vlans in spanning tree forwarding state and not pruned
-Gig1/1/1    20,50,99
+**STP на SW-Ceh2:**
 ```
-```
-SW-Ceh2#show spanning-tree
+W-Ceh2#show spanning-tree 
 VLAN0001
   Spanning tree enabled protocol rstp
   Root ID    Priority    24577
-             Address     0004.9AB7.EC05
+             Address     0005.5EAB.BA60
              Cost        8
              Port        25(GigabitEthernet1/1/1)
              Hello Time  2 sec  Max Age 20 sec  Forward Delay 15 sec
 
   Bridge ID  Priority    32769  (priority 32768 sys-id-ext 1)
-             Address     0060.5C84.7514
+             Address     00E0.A343.7BCE
              Hello Time  2 sec  Max Age 20 sec  Forward Delay 15 sec
              Aging Time  20
 
@@ -1488,31 +1481,31 @@ Gi1/1/1          Root FWD 4         128.25   P2p
 VLAN0021
   Spanning tree enabled protocol rstp
   Root ID    Priority    24597
-             Address     0004.9AB7.EC05
+             Address     0005.5EAB.BA60
              Cost        8
              Port        25(GigabitEthernet1/1/1)
              Hello Time  2 sec  Max Age 20 sec  Forward Delay 15 sec
 
   Bridge ID  Priority    32789  (priority 32768 sys-id-ext 21)
-             Address     0060.5C84.7514
+             Address     00E0.A343.7BCE
              Hello Time  2 sec  Max Age 20 sec  Forward Delay 15 sec
              Aging Time  20
 
 Interface        Role Sts Cost      Prio.Nbr Type
 ---------------- ---- --- --------- -------- --------------------------------
-Gi1/0/1          Desg FWD 19        128.1    P2p
 Gi1/1/1          Root FWD 4         128.25   P2p
+Gi1/0/1          Desg FWD 19        128.1    P2p
 
 VLAN0050
   Spanning tree enabled protocol rstp
   Root ID    Priority    24626
-             Address     0004.9AB7.EC05
+             Address     0005.5EAB.BA60
              Cost        8
              Port        25(GigabitEthernet1/1/1)
              Hello Time  2 sec  Max Age 20 sec  Forward Delay 15 sec
 
   Bridge ID  Priority    32818  (priority 32768 sys-id-ext 50)
-             Address     0060.5C84.7514
+             Address     00E0.A343.7BCE
              Hello Time  2 sec  Max Age 20 sec  Forward Delay 15 sec
              Aging Time  20
 
@@ -1522,22 +1515,25 @@ Gi1/1/1          Root FWD 4         128.25   P2p
 
 VLAN0099
   Spanning tree enabled protocol rstp
-  Root ID    Priority    32867
-             Address     0060.5C84.7514
-             This bridge is the root
+  Root ID    Priority    24675
+             Address     0005.5EAB.BA60
+             Cost        8
+             Port        25(GigabitEthernet1/1/1)
              Hello Time  2 sec  Max Age 20 sec  Forward Delay 15 sec
 
   Bridge ID  Priority    32867  (priority 32768 sys-id-ext 99)
-             Address     0060.5C84.7514
+             Address     00E0.A343.7BCE
              Hello Time  2 sec  Max Age 20 sec  Forward Delay 15 sec
              Aging Time  20
 
 Interface        Role Sts Cost      Prio.Nbr Type
 ---------------- ---- --- --------- -------- --------------------------------
-Gi1/1/1          Desg FWD 4         128.25   P2p
+Gi1/1/1          Root FWD 4         128.25   P2p
 ```
+
+**EtherChannel на SW-Optical-1:**
 ```
-SW-Optical-1#show etherchannel summary
+SW-Optical-1#show etherchannel summary 
 Flags:  D - down        P - in port-channel
         I - stand-alone s - suspended
         H - Hot-standby (LACP only)
@@ -1556,8 +1552,10 @@ Group  Port-channel  Protocol    Ports
 
 1      Po1(SU)           LACP   Gig1/0/1(P) Gig1/0/2(P) 
 ```
+
+**Port Security на SW-Floor1:**
 ```
-SW-Floor1#show port-security
+SW-Floor1#show port-security 
 Secure Port MaxSecureAddr CurrentAddr SecurityViolation Security Action
                (Count)       (Count)        (Count)
 --------------------------------------------------------------------
@@ -1584,22 +1582,35 @@ Secure Port MaxSecureAddr CurrentAddr SecurityViolation Security Action
 ----------------------------------------------------------------------
 ```
 
-### 8.3. С конечных устройств
-Проверка работы DHCP
+### 8.3. Проверка с конечных устройств
+
+Проверяем работу DHCP-сервера на PC0, находящемся на первом этаже управления.
 ```cmd
 C:\>ipconfig
 
 FastEthernet0 Connection:(default port)
 
    Connection-specific DNS Suffix..: 
-   Link-local IPv6 Address.........: FE80::201:C7FF:FE0A:E261
+   Link-local IPv6 Address.........: FE80::203:E4FF:FEDA:E846
    IPv6 Address....................: ::
    IPv4 Address....................: 192.168.10.11
    Subnet Mask.....................: 255.255.255.0
    Default Gateway.................: ::
                                      192.168.10.1
+
+Bluetooth Connection:
+
+   Connection-specific DNS Suffix..: 
+   Link-local IPv6 Address.........: ::
+   IPv6 Address....................: ::
+   IPv4 Address....................: 0.0.0.0
+   Subnet Mask.....................: 0.0.0.0
+   Default Gateway.................: ::
+         
 ```
-Связь внутри Vlan
+
+**Связь с шлюзом (ping 192.168.20.1):**
+Проверяем с ПК цеха №1
 ```cmd
 C:\>ping 192.168.20.1
 
@@ -1609,33 +1620,142 @@ Reply from 192.168.20.1: bytes=32 time<1ms TTL=255
 Reply from 192.168.20.1: bytes=32 time<1ms TTL=255
 Reply from 192.168.20.1: bytes=32 time<1ms TTL=255
 Reply from 192.168.20.1: bytes=32 time<1ms TTL=255
+
+Ping statistics for 192.168.20.1:
+    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
+Approximate round trip times in milli-seconds:
+    Minimum = 0ms, Maximum = 0ms, Average = 0ms
 ```
+
+### 8.4. Проверка изоляции
+С ПК цеха№1 пробуем пропинговать ПК в управлении.
+```cmd
+C:\>ping 192.168.10.11
+
+Pinging 192.168.10.11 with 32 bytes of data:
+
+Reply from 192.168.20.1: Destination host unreachable.
+Reply from 192.168.20.1: Destination host unreachable.
+Reply from 192.168.20.1: Destination host unreachable.
+Reply from 192.168.20.1: Destination host unreachable.
+
+Ping statistics for 192.168.10.11:
+    Packets: Sent = 4, Received = 0, Lost = 4 (100% loss),
+```
+Проверяем доступность камеры, подключенной к SW-Ceh1 Gi1/0/18
+```cmd
+C:\>ping 192.168.50.11
+
+Pinging 192.168.50.11 with 32 bytes of data:
+
+Reply from 192.168.20.1: Destination host unreachable.
+Reply from 192.168.20.1: Destination host unreachable.
+Reply from 192.168.20.1: Destination host unreachable.
+Reply from 192.168.20.1: Destination host unreachable.
+
+Ping statistics for 192.168.50.11:
+    Packets: Sent = 4, Received = 0, Lost = 4 (100% loss),
+```
+Проверяем доступность видеонаблюдения с доменного ПК
+```cmd
+C:\>ping 192.168.50.11
+
+Pinging 192.168.50.12 with 32 bytes of data:
+
+Reply from 192.168.50.12: bytes=32 time<1ms TTL=127
+Reply from 192.168.50.12: bytes=32 time<1ms TTL=127
+Reply from 192.168.50.12: bytes=32 time<1ms TTL=127
+Reply from 192.168.50.12: bytes=32 time<1ms TTL=127
+
+Ping statistics for 192.168.50.12:
+    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
+Approximate round trip times in milli-seconds:
+```
+**Списков доступа на Core-SW:**
+```
+Core-SW#show access-lists 20
+Standard IP access list 20
+    deny 192.168.10.0 0.0.0.255
+    deny 192.168.21.0 0.0.0.15
+    deny 192.168.22.0 0.0.0.15
+    deny 192.168.23.0 0.0.0.15
+    deny 192.168.30.0 0.0.0.15
+    deny 192.168.31.0 0.0.0.15
+    deny 192.168.50.0 0.0.0.255
+    deny 192.168.60.0 0.0.0.255
+    deny 192.168.99.0 0.0.0.15
+    permit any
+
+```
+
+### 8.5. Проверка выхода в Интернет
+Проверяем с ПК автотранспортной проходной.
+```
+C:\>ping 8.8.8.8
+
+Pinging 8.8.8.8 with 32 bytes of data:
+
+Reply from 8.8.8.8: bytes=32 time<1ms TTL=253
+Reply from 8.8.8.8: bytes=32 time<1ms TTL=253
+Reply from 8.8.8.8: bytes=32 time<1ms TTL=253
+Reply from 8.8.8.8: bytes=32 time<1ms TTL=253
+
+Ping statistics for 8.8.8.8:
+    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
+Approximate round trip times in milli-seconds:
+    Minimum = 0ms, Maximum = 0ms, Average = 0ms
+
+```
+
+### 8.6. Проверка SSH
+С ПК на АТР
+```
+C:\>ssh -l admin 192.168.99.1
+
+Password: 
+
+ Authorized Access Only! 
+
+Core-SW>
+```
+
+---
 
 ## 9. Примечания и ограничения
 
-1. **48-портовые коммутаторы:** В Cisco Packet Tracer 9.0 нет 48-портовых моделей. Использованы 24-портовые модели. В реальной сети применяются **Cisco 2960-48PST-L** (этажи, цеха) и **Cisco 3560-24PS** (проходные).
+1. **48-портовые коммутаторы:** В Cisco Packet Tracer 9.0 нет 48-портовых моделей. Использованы 24-портовые. В реальной сети — **Cisco 2960-48PST-L** (этажи, цеха) и **Cisco 3560-24PS** (проходные).
 
-2. **PoE на этажах:** В CPT 9.0 коммутаторы 2960 не поддерживают PoE. Для гостевых Wi-Fi точек на этажах в реальной сети используются внешние PoE-инжекторы либо коммутаторы с PoE (2960-48PST-L).
+2. **PoE на этажах:** В CPT 9.0 коммутаторы 2960 не поддерживают PoE. Для гостевых Wi-Fi точек — внешние PoE-инжекторы или 2960-48PST-L.
 
-3. **PoE в цехах и на проходных:** В CPT 9.0 используется **3650-24PS** для питания камер. В реальной сети — **2960-48PST-L** (цеха) и **3560-24PS** (проходные) с PoE.
+3. **PoE в цехах и на проходных:** В CPT 9.0 используется **3650-24PS**. В реальной сети — **2960-48PST-L** (цеха) и **3560-24PS** (проходные).
 
-4. **Оптические порты:** В CPT только **3650-24PS** имеет SFP-порты (4 шт.). Для 7 оптических линков использованы два коммутатора: **SW-Optical-1** и **SW-Optical-2**, соединённые EtherChannel.
+4. **Оптические порты:** Только **3650-24PS** имеет SFP-порты (4 шт.). Для 7 оптических линков — два коммутатора (SW-Optical-1 и SW-Optical-2), соединённые EtherChannel.
 
-5. **Standard ACL:** Использованы стандартные ACL (1–99). Они фильтруют только по источнику и размещаются близко к назначению. Для более точного контроля в реальной сети применяются расширенные ACL.
+5. **Standard ACL:** Использованы стандартные ACL (1–99). Для более точного контроля в реальной сети применяются расширенные ACL.
+
+6. **ACL на SVI:** `out` — фильтрует трафик, **входящий в VLAN**.
+
+7. **Пинг до SVI:** Пинг до IP-адреса SVI не фильтруется outbound ACL — это control plane трафик.
+
+
+8. **Collapsed core:** Двухуровневая модель (Core + Distribution объединены в Core-SW) одобренная Cisco для предприятий среднего размера.
+
+9. **Доменное имя:** `dok.local` — для SSH и NTP.
 
 ---
 
 ## 10. Выводы
 
 Проект реализует:
-- Иерархическую топологию с ядром на L3-коммутаторе Cisco 3650.
-- Сегментацию на 10 VLAN: домен, 4 цеха, 2 проходные, Video, Guest, управление.
+- Иерархическую топологию с ядром на L3-коммутаторе Cisco 3650 (collapsed core).
+- Сегментацию на 10 VLAN: домен, 4 цеха, 2 проходные, Video, гостевой , доменные пк ( управление).
 - Изоляцию промышленных сетей и проходных через стандартные ACL.
 - Доступ к видеонаблюдению только из доменной сети.
 - Полную изоляцию гостевой сети от внутренних ресурсов с сохранением выхода в Интернет.
 - Автоматическую выдачу адресов через DHCPv4.
 - Выход в Интернет через NAT (PAT).
-- Управление через NTP, SNMP, CDP/LLDP, SSH.
+- Динамическую маршрутизацию OSPF между Edge-Router и Core-SW.
+- Управление через NTP, SNMP (community), CDP/LLDP, SSH.
 - Отказоустойчивость через STP (Rapid-PVST+) и EtherChannel (LACP).
 - Масштабируемость за счёт L3-ядра и модульной архитектуры.
 - Экономию бюджета за счёт использования Cisco 2960-24TT на этажах.
