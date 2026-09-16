@@ -79,7 +79,7 @@
 
 ### 5.1. ISP-Router (Cisco 2911)
 
-```
+```cisco
 enable
 configure terminal
 hostname ISP-Router
@@ -104,7 +104,7 @@ write memory
 
 ### 5.2. Edge-Router (Cisco 2911)
 
-```
+```cisco
 enable
 configure terminal
 hostname Edge-Router
@@ -160,7 +160,7 @@ write memory
 
 ### 5.3. Core-SW (Cisco 3650, L3)
 
-```
+```cisco
 enable
 configure terminal
 hostname Core-SW
@@ -348,7 +348,7 @@ write memory
 
 ### 5.4. SW-Optical-1 (Cisco 3650)
 
-```
+```cisco
 enable
 configure terminal
 hostname SW-Optical-1
@@ -432,7 +432,7 @@ write memory
 
 ### 5.5. SW-Optical-2 (Cisco 3650)
 
-```
+```cisco
 enable
 configure terminal
 hostname SW-Optical-2
@@ -511,7 +511,7 @@ write memory
 
 ### 5.6. SW-Floor1 (Cisco 2960, VLAN 10 + Guest)
 
-```
+```cisco
 enable
 configure terminal
 hostname SW-Floor1
@@ -576,7 +576,7 @@ write memory
 
 ### 5.7. SW-Floor2 (Cisco 2960, VLAN 10 + Guest)
 
-```
+```cisco
 enable
 configure terminal
 hostname SW-Floor2
@@ -641,7 +641,7 @@ write memory
 
 ### 5.8. SW-Ceh1 (Cisco 3650, VLAN 20)
 
-```
+```cisco
 enable
 configure terminal
 hostname SW-Ceh1
@@ -708,7 +708,7 @@ write memory
 
 ### 5.9. SW-Ceh2 (Cisco 3650, VLAN 21)
 
-```
+```cisco
 enable
 configure terminal
 hostname SW-Ceh2
@@ -775,7 +775,7 @@ write memory
 
 ### 5.10. SW-Ceh3 (Cisco 3650, VLAN 22)
 
-```
+```cisco
 enable
 configure terminal
 hostname SW-Ceh3
@@ -842,7 +842,7 @@ write memory
 
 ### 5.11. SW-Ceh4 (Cisco 3650, VLAN 23)
 
-```
+```cisco
 enable
 configure terminal
 hostname SW-Ceh4
@@ -909,7 +909,7 @@ write memory
 
 ### 5.12. SW-TP (Cisco 3650, VLAN 30)
 
-```
+```cisco
 enable
 configure terminal
 hostname SW-TP
@@ -976,7 +976,7 @@ write memory
 
 ### 5.13. SW-ATP (Cisco 3650, VLAN 31)
 
-```
+```cisco
 enable
 configure terminal
 hostname SW-ATP
@@ -1067,7 +1067,7 @@ Bluetooth Connection:
    Subnet Mask.....................: 0.0.0.0
    Default Gateway.................: ::
                                      0.0.0.0
----
+```
 
 ## 6. Изоляция VLAN (стандартные ACL)
 
@@ -1075,7 +1075,7 @@ Bluetooth Connection:
 
 ### 6.1. ACL 10 — DOMAIN (VLAN 10)
 
-```
+```cisco
 access-list 10 deny 192.168.20.0 0.0.0.15
 access-list 10 deny 192.168.21.0 0.0.0.15
 access-list 10 deny 192.168.22.0 0.0.0.15
@@ -1088,7 +1088,7 @@ access-list 10 permit any
 
 ### 6.2. ACL 20 — Ceh1 (VLAN 20)
 
-```
+```cisco
 access-list 20 deny 192.168.10.0 0.0.0.255
 access-list 20 deny 192.168.21.0 0.0.0.15
 access-list 20 deny 192.168.22.0 0.0.0.15
@@ -1103,7 +1103,7 @@ access-list 20 permit any
 
 ### 6.3. ACL 21 — Ceh2 (VLAN 21)
 
-```
+```cisco
 access-list 21 deny 192.168.10.0 0.0.0.255
 access-list 21 deny 192.168.20.0 0.0.0.15
 access-list 21 deny 192.168.22.0 0.0.0.15
@@ -1118,7 +1118,7 @@ access-list 21 permit any
 
 ### 6.4. ACL 22 — Ceh3 (VLAN 22)
 
-```
+```cisco
 access-list 22 deny 192.168.10.0 0.0.0.255
 access-list 22 deny 192.168.20.0 0.0.0.15
 access-list 22 deny 192.168.21.0 0.0.0.15
@@ -1133,7 +1133,7 @@ access-list 22 permit any
 
 ### 6.5. ACL 23 — Ceh4 (VLAN 23)
 
-```
+```cisco
 access-list 23 deny 192.168.10.0 0.0.0.255
 access-list 23 deny 192.168.20.0 0.0.0.15
 access-list 23 deny 192.168.21.0 0.0.0.15
@@ -1148,7 +1148,7 @@ access-list 23 permit any
 
 ### 6.6. ACL 30 — TP (VLAN 30)
 
-```
+```cisco
 access-list 30 deny 192.168.10.0 0.0.0.255
 access-list 30 deny 192.168.20.0 0.0.0.15
 access-list 30 deny 192.168.21.0 0.0.0.15
@@ -1163,7 +1163,7 @@ access-list 30 permit any
 
 ### 6.7. ACL 31 — ATP (VLAN 31)
 
-```
+```cisco
 access-list 31 deny 192.168.10.0 0.0.0.255
 access-list 31 deny 192.168.20.0 0.0.0.15
 access-list 31 deny 192.168.21.0 0.0.0.15
@@ -1178,7 +1178,7 @@ access-list 31 permit any
 
 ### 6.8. ACL 50 — Video (VLAN 50)
 
-```
+```cisco
 access-list 50 deny 192.168.20.0 0.0.0.15
 access-list 50 deny 192.168.21.0 0.0.0.15
 access-list 50 deny 192.168.22.0 0.0.0.15
@@ -1192,7 +1192,7 @@ access-list 50 permit any
 
 ### 6.9. ACL 60 — Guest (VLAN 60)
 
-```
+```cisco
 access-list 60 deny 192.168.10.0 0.0.0.255
 access-list 60 deny 192.168.20.0 0.0.0.15
 access-list 60 deny 192.168.21.0 0.0.0.15
@@ -1207,7 +1207,7 @@ access-list 60 permit any
 
 ### 6.10. ACL 99 — MGMT (VLAN 99)
 
-```
+```cisco
 access-list 99 deny 192.168.20.0 0.0.0.15
 access-list 99 deny 192.168.21.0 0.0.0.15
 access-list 99 deny 192.168.22.0 0.0.0.15
@@ -1220,7 +1220,7 @@ access-list 99 permit any
 
 ### 6.11. Применение ACL ко всем SVI
 
-```
+```cisco
 interface vlan 10
  ip access-group 10 out
 interface vlan 20
@@ -1244,25 +1244,6 @@ interface vlan 99
 exit
 write memory
 ```
-
-### 6.12. Если ACL создан неправильно
-
-```
-configure terminal
-no access-list 10
-no access-list 20
-no access-list 21
-no access-list 22
-no access-list 23
-no access-list 30
-no access-list 31
-no access-list 50
-no access-list 60
-no access-list 99
-```
-
-Затем создать ACL заново (разделы 6.1–6.10) и применить к SVI (раздел 6.11).
-
 ---
 
 ## 7. Таблица магистральных линков (Trunk)
@@ -1286,8 +1267,8 @@ no access-list 99
 
 ### 8.1. На Core-SW
 
-**Маршрутизация (show ip route):**
-```
+**Маршрутизация:**
+```cisco
 Core-SW#show ip route
 Core-SW#show ip route
 Codes: C - connected, S - static, I - IGRP, R - RIP, M - mobile, B - BGP
@@ -1337,8 +1318,8 @@ L       192.168.99.1/32 is directly connected, Vlan99
 S*   0.0.0.0/0 [1/0] via 10.0.1.1
 ```
 
-**ACL (show access-lists):**
-```
+**ACL**
+```cisco
 Core-SW#show access-lists
 Standard IP access list 10
     10 deny 192.168.20.0 0.0.0.15
@@ -1383,8 +1364,8 @@ Standard IP access list 60
    100 permit any
 ```
 
-**VLAN (show vlan brief):**
-```
+**VLAN:**
+```cisco
 Core-SW#show vlan brief 
 
 VLAN Name                             Status    Ports
@@ -1411,8 +1392,8 @@ VLAN Name                             Status    Ports
 1005 trnet-default                    active    
 ```
 
-**Транки (show interfaces trunk):**
-```
+**Транки**
+```cisco
 Core-SW#show interfaces trunk
 Core-SW#show interfaces trunk 
 Port        Mode         Encapsulation  Status        Native vlan
@@ -1439,7 +1420,7 @@ Gig1/1/1    20,21,22,23,30,31,50,60,99
 ### 8.2. На коммутаторах
 
 **VLAN на SW-Floor1:**
-```
+```cisco
 SW-Floor1#show vlan brief 
 
 VLAN Name                             Status    Ports
@@ -1459,7 +1440,7 @@ VLAN Name                             Status    Ports
 ```
 
 **STP на SW-Ceh2:**
-```
+```cisco
 W-Ceh2#show spanning-tree 
 VLAN0001
   Spanning tree enabled protocol rstp
@@ -1532,7 +1513,7 @@ Gi1/1/1          Root FWD 4         128.25   P2p
 ```
 
 **EtherChannel на SW-Optical-1:**
-```
+```cisco
 SW-Optical-1#show etherchannel summary 
 Flags:  D - down        P - in port-channel
         I - stand-alone s - suspended
@@ -1554,7 +1535,7 @@ Group  Port-channel  Protocol    Ports
 ```
 
 **Port Security на SW-Floor1:**
-```
+```cisco
 SW-Floor1#show port-security 
 Secure Port MaxSecureAddr CurrentAddr SecurityViolation Security Action
                (Count)       (Count)        (Count)
@@ -1672,7 +1653,7 @@ Ping statistics for 192.168.50.12:
 Approximate round trip times in milli-seconds:
 ```
 **Списков доступа на Core-SW:**
-```
+```cisco
 Core-SW#show access-lists 20
 Standard IP access list 20
     deny 192.168.10.0 0.0.0.255
@@ -1709,7 +1690,7 @@ Approximate round trip times in milli-seconds:
 
 ### 8.6. Проверка SSH
 С ПК на АТР
-```
+```cmd
 C:\>ssh -l admin 192.168.99.1
 
 Password: 
@@ -1723,17 +1704,17 @@ Core-SW>
 
 ## 9. Примечания и ограничения
 
-1. **48-портовые коммутаторы:** В Cisco Packet Tracer 9.0 нет 48-портовых моделей. Использованы 24-портовые. В реальной сети — **Cisco 2960-48PST-L** (этажи, цеха) и **Cisco 3560-24PS** (проходные).
+1. **48-портовые коммутаторы:** В Cisco Packet Tracer 9.0 нет 48-портовых моделей. Использованы 24-портовые. В реальной сети — Cisco 2960-48PST-L (этажи, цеха) и Cisco 3560-24PS (проходные).
 
 2. **PoE на этажах:** В CPT 9.0 коммутаторы 2960 не поддерживают PoE. Для гостевых Wi-Fi точек — внешние PoE-инжекторы или 2960-48PST-L.
 
-3. **PoE в цехах и на проходных:** В CPT 9.0 используется **3650-24PS**. В реальной сети — **2960-48PST-L** (цеха) и **3560-24PS** (проходные).
+3. **PoE в цехах и на проходных:** В CPT 9.0 используется 3650-24PS. В реальной сети — 2960-48PST-L (цеха) и 3560-24PS (проходные).
 
-4. **Оптические порты:** Только **3650-24PS** имеет SFP-порты (4 шт.). Для 7 оптических линков — два коммутатора (SW-Optical-1 и SW-Optical-2), соединённые EtherChannel.
+4. **Оптические порты:** Только 3650-24PS имеет SFP-порты (4 шт.). Для 7 оптических линков — два коммутатора (SW-Optical-1 и SW-Optical-2), соединённые EtherChannel.
 
 5. **Standard ACL:** Использованы стандартные ACL (1–99). Для более точного контроля в реальной сети применяются расширенные ACL.
 
-6. **ACL на SVI:** `out` — фильтрует трафик, **входящий в VLAN**.
+6. **ACL на SVI:** `out` — фильтрует трафик, входящий в VLAN.
 
 7. **Пинг до SVI:** Пинг до IP-адреса SVI не фильтруется outbound ACL — это control plane трафик.
 
