@@ -149,8 +149,12 @@ access-list 1 permit 192.168.0.0 0.0.255.255
 ip nat inside source list 1 interface GigabitEthernet0/0 overload
 !
 router ospf 1
+ router-id 1.1.1.1
+ passive-interface default
+ no passive-interface GigabitEthernet0/1
  network 10.0.0.0 0.0.0.3 area 0
  network 10.0.1.0 0.0.0.3 area 0
+ default-information originate
 !
 end
 write memory
@@ -266,6 +270,10 @@ spanning-tree vlan 1-4094 root primary
 ip route 0.0.0.0 0.0.0.0 10.0.1.1
 !
 router ospf 1
+router ospf 1
+ router-id 2.2.2.2
+ passive-interface default
+ no passive-interface GigabitEthernet1/0/1
  network 10.0.1.0 0.0.0.3 area 0
  network 192.168.10.0 0.0.0.255 area 0
  network 192.168.20.0 0.0.0.15 area 0
